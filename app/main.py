@@ -10,5 +10,9 @@ app = FastAPI(description="",
 async def root():
     return RedirectResponse("/docs")
 
+# Users #
+# @app.post("/users/register")
+
+
 if __name__ == "__main__":
     uvicorn.run(f"{__name__}:app", reload=True)
