@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     DB_USER: str = 'postgres'
     DB_PASSWORD: str = "postgres"
-    DB_NAME: str = "db_info_hub"
+    DB_NAME: str = "db_notes"
 
     GOOGLE_CLIENT_ID: str = "your-google-client-id"
     GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"

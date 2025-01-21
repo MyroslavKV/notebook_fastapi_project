@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Text, ForeignKey
+from sqlalchemy import Text, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from settings import Base
 from app.schemas import UserType
@@ -14,9 +14,14 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column()
     role: Mapped[UserType] = mapped_column(default=UserType.USER)
     bio: Mapped[str] = mapped_column(nullable=True)
-        
+
+    create_date: Mapped[datetime] = mapped_column(server_default=func.now())
+
     notes = relationship("Notes", back_populates="author", cascade="all, delete-orphan")
     comments = relationship("Comments", back_populates="author", cascade="all, delete-orphan")
+
+    def __str__(self):
+        return f"User: {self.email}, {self.username}"
 
 class Notes():
     __tablename__ = "notes"
