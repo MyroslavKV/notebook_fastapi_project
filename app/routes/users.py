@@ -1,38 +1,64 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas import InputUserData, ListBaseUsers, InputUpdateUser, OutUserName, UserBase
 
-from app.crud import create_user, authenticate_user, get_user_by_email
-from app.schemas import UserCreate, UserLogin, UserOut
-from app.security import create_access_token, get_current_user
 from app.models import User
 from settings import get_db
+from werkzeug.security import generate_password_hash
+from app.routes.auth import get_current_admin, get_current_user
 
-route = APIRouter(
-    prefix="/users",
-    tags=["users"]
-)
+route = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
-# Users #
-@route.post("/users/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    existing_user = await get_user_by_email(db, user.email)
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
-    new_user = await create_user(db, user)
-    return new_user
+@route.post("/")
+async def registration(data_user: InputUserData,
+                       session: AsyncSession = Depends(get_db)) -> UserBase:
+    stmt = select(User).filter_by(email=data_user.email)
+    user = await session.scalar(stmt)
+    if user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is exists")
 
-@route.post("/users/login", status_code=status.HTTP_200_OK)
-async def login_user(user: UserLogin, db: AsyncSession = Depends(get_db)):
-    auth_user = await authenticate_user(db, user.email, user.password)
-    if not auth_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "Invalid credentials")
-    token = create_access_token({"sub": auth_user.email})
-    return {"access_token": token, "token_type": "bearer"}
+    user_dict = data_user.model_dump()
+    user_dict["password_hash"] = generate_password_hash(user_dict["password"])
+    del user_dict["password_repeat"]
+    del user_dict["password"]
 
-@route.get("/users/me", response_model=UserOut)
-async def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    new_user = User(**user_dict)
+
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+
+    return UserBase.model_validate(new_user)
+
+
+@route.get("/read_all/")
+async def get_all_users(session: AsyncSession = Depends(get_db),
+                        _=Depends(get_current_admin)) -> ListBaseUsers:
+    users = await session.scalars(select(User))
+    count = await session.scalar(select(func.count()).select_from(User))
+    return ListBaseUsers(users=users, count_users=count)
+
+
+@route.get("/read_current_user/")
+async def account_current_user(current_user=Depends(get_current_user)) -> UserBase:
+    return UserBase.model_validate(current_user)
+
+
+@route.put("/")
+async def change_by_id(data: InputUpdateUser,
+                       current_user=Depends(get_current_user),
+                       session: AsyncSession = Depends(get_db)) -> UserBase:
+    if data.username:
+        current_user.username = data.username
+    if data.bio:
+        current_user.bio = data.bio
+
+    await session.commit()
+    await session.refresh(current_user)
+    return UserBase.model_validate(current_user)
+
+
+async def drop_user():
+    pass

@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
-from app.routes import user_route
+from app.routes import user_route, notes_route, auth_route
 from settings import engine
 from app.models import User
 from fastapi.responses import RedirectResponse
@@ -17,6 +17,8 @@ async def root():
     return RedirectResponse("/docs")
 
 app.include_router(user_route, prefix="/account", tags=["users"])
+app.include_router(notes_route, prefix="/notes", tags=["notes"])
+app.include_router(auth_route, prefix="/auth", tags=["auth"])
 
 
 if __name__ == "__main__":

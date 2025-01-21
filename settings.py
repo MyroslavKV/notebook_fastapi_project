@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str = "your-google-redirect-uri"
 
     SECRET_KEY: str = "secret_key-123"
+    ALGORITHM: str = "HS256"
 
     def pg_dsn(self, engine_="asyncpg") -> PostgresDsn:
         return (
@@ -27,10 +28,6 @@ class Settings(BaseSettings):
 
 class Base(DeclarativeBase):
     pass
-
-
-
-
 
 settings_app = Settings()
 
