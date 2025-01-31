@@ -11,7 +11,7 @@ from settings import get_db, AsyncSession
 
 route = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 @route.post("/token")
@@ -34,7 +34,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Невірний токен",
+            detail="Wrong token",
             headers={"Authorization": "Bearer"},
         )
     return user

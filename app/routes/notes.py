@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from app.models import Notes
+from app.models import Note
 from app.schemas import NoteCreate, NoteUpdate, NoteResponse, NotesList
 from app.routes.auth import get_current_user
 from settings import get_db
@@ -14,7 +14,7 @@ async def create_note(
     session: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    new_note = Notes(
+    new_note = Note(
         title=note_data.title,
         content=note_data.content,
         tags=note_data.tags,
@@ -30,11 +30,11 @@ async def get_all_notes(
     session: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    stmt = select(Notes).filter_by(user_id=current_user.id)
+    stmt = select(Note).filter_by(user_id=current_user.id)
     result = await session.scalars(stmt)
     notes = result.all()
     count = await session.scalar(
-        select(func.count()).filter(Notes.user_id == current_user.id)
+        select(func.count()).filter(Note.user_id == current_user.id)
     )
     return NotesList(notes=notes, count=count)
 
@@ -44,7 +44,7 @@ async def get_note_by_id(
     session: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    stmt = select(Notes).filter_by(id=note_id, user_id=current_user.id)
+    stmt = select(Note).filter_by(id=note_id, user_id=current_user.id)
     note = await session.scalar(stmt)
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
@@ -57,7 +57,7 @@ async def update_note(
     session: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    stmt = select(Notes).filter_by(id=note_id, user_id=current_user.id)
+    stmt = select(Note).filter_by(id=note_id, user_id=current_user.id)
     note = await session.scalar(stmt)
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
@@ -75,7 +75,7 @@ async def delete_note(
     session: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    stmt = select(Notes).filter_by(id=note_id, user_id=current_user.id)
+    stmt = select(Note).filter_by(id=note_id, user_id=current_user.id)
     note = await session.scalar(stmt)
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
