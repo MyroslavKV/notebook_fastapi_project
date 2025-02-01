@@ -1,4 +1,3 @@
-from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import (AsyncAttrs, async_sessionmaker,
                                     create_async_engine, AsyncSession)
@@ -9,28 +8,32 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra="allow")
     DEBUG: bool = True
 
-    DB_NAME: str = "db_notes.sqlite"
+    DB_USER: str = 'sqlite'
+    DB_PASSWORD: str = "sqlite"
+    DB_NAME: str = "db_notes"
 
     GOOGLE_CLIENT_ID: str = "your-google-client-id"
     GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
     GOOGLE_REDIRECT_URI: str = "your-google-redirect-uri"
 
     SECRET_KEY: str = "secret_key-123"
-    ALGORITHM: str = "HS256"
 
     def sqlite_dsn(self) -> str:
-        return f"sqlite:///{self.DB_NAME}"
+        return f"sqlite+aiosqlite:///./{self.DB_NAME}.db"
 
-
-class Base(DeclarativeBase):
-    pass
 
 settings_app = Settings()
 
-DATABASE_URL = f"sqlite+aiosqlite:///{settings_app.DB_NAME}"
-engine = create_async_engine(DATABASE_URL, echo=True, connect_args={"check_same_thread": False})
-async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+DATABASE_URL = settings_app.sqlite_dsn()
+engine = create_async_engine(DATABASE_URL, echo=True)
+async_session = async_sessionmaker(bind=engine)
+
+
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
+
 
 async def get_db() -> AsyncSession:
-    async with async_session() as session:
-        yield session
+    async with async_session() as sess:
+        yield sess
+

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas import InputUserData, ListBaseUsers, InputUpdateUser, OutUserName, UserBase
+
+from app.routes.auth import get_current_user
+from app.schemas import InputUserData, UserBase
 
 from app.models import User
 from settings import get_db
 from werkzeug.security import generate_password_hash
-from app.routes.auth import get_current_admin, get_current_user
 
 route = APIRouter()
 
@@ -33,32 +34,6 @@ async def registration(data_user: InputUserData,
     return UserBase.model_validate(new_user)
 
 
-@route.get("/read_all/")
-async def get_all_users(session: AsyncSession = Depends(get_db),
-                        _=Depends(get_current_admin)) -> ListBaseUsers:
-    users = await session.scalars(select(User))
-    count = await session.scalar(select(func.count()).select_from(User))
-    return ListBaseUsers(users=users, count_users=count)
-
-
 @route.get("/read_current_user/")
 async def account_current_user(current_user=Depends(get_current_user)) -> UserBase:
     return UserBase.model_validate(current_user)
-
-
-@route.put("/")
-async def change_by_id(data: InputUpdateUser,
-                       current_user=Depends(get_current_user),
-                       session: AsyncSession = Depends(get_db)) -> UserBase:
-    if data.username:
-        current_user.username = data.username
-    if data.bio:
-        current_user.bio = data.bio
-
-    await session.commit()
-    await session.refresh(current_user)
-    return UserBase.model_validate(current_user)
-
-
-async def drop_user():
-    pass
