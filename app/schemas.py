@@ -61,21 +61,18 @@ class Token(BaseModel):
 class NoteCreate(BaseModel):
     title: str = Field(..., max_length=255, description="Заголовок нотатки")
     content: str = Field(..., description="Вміст нотатки")
-    tags: Optional[List[str]] = Field(default=[], description="Список тегів")
 
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255, description="Оновлений заголовок нотатки")
     content: Optional[str] = Field(None, description="Оновлений вміст нотатки")
-    tags: Optional[List[str]] = Field(None, description="Оновлений список тегів")
 
 
 class NoteResponse(BaseModel):
     id: int
     title: str
     content: str
-    tags: List[str]
-    user_id: int
+    author_id: int
 
     class Config:
         from_attributes = True
